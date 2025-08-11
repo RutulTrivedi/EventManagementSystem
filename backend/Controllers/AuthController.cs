@@ -58,7 +58,7 @@ public class AuthController : ControllerBase
 
     // ✅ REGISTER
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] User newUser)
+    public async Task<IActionResult> Register([FromBody] User newUser, [FromServices] IEmailService emailService)
     {
         try
         {
@@ -76,6 +76,11 @@ public class AuthController : ControllerBase
             newUser.UserPassword = null;
 
             var token = _authService.GenerateJwt(newUser);
+
+            string subject = "Welcome to EventSync!";
+    string body = $"<h1>Welcome, {newUser.UserFullName}!</h1><p>We’re glad to have you on board.</p>";
+
+    await emailService.SendEmailAsync(newUser.UserEmail, subject, body);
 
             return Ok(new
             {

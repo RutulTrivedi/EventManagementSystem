@@ -1,27 +1,26 @@
-using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
-public class EmailService
+public class EmailService : IEmailService
 {
-    private readonly EmailSettings _emailSettings;
+    private readonly SmtpSettings _smtpSettings;
 
-    public EmailService(IOptions<EmailSettings> emailSettings)
+    public EmailService(IOptions<SmtpSettings> smtpSettings)
     {
-        _emailSettings = emailSettings.Value;
+        _smtpSettings = smtpSettings.Value;
     }
 
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
-        using (var client = new SmtpClient(_emailSettings.SMTPHost, _emailSettings.SMTPPort))
+        using (var client = new SmtpClient(_smtpSettings.Server, _smtpSettings.Port))
         {
-            client.Credentials = new NetworkCredential(_emailSettings.SMTPUsername, _emailSettings.SMTPPassword);
+            client.Credentials = new NetworkCredential(_smtpSettings.Username, _smtpSettings.Password);
             client.EnableSsl = true;
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(_emailSettings.FromEmail, _emailSettings.FromName),
+                From = new MailAddress(_smtpSettings.SenderEmail, _smtpSettings.SenderName),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = true
@@ -32,14 +31,4 @@ public class EmailService
             await client.SendMailAsync(mailMessage);
         }
     }
-}
-
-public class EmailSettings
-{
-    public string SMTPHost { get; set; }
-    public int SMTPPort { get; set; }
-    public string SMTPUsername { get; set; }
-    public string SMTPPassword { get; set; }
-    public string FromEmail { get; set; }
-    public string FromName { get; set; }
 }

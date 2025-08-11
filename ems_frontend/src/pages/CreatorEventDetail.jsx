@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import CreatorHeader from "../components/CreatorHeader";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { motion, AnimatePresence } from "framer-motion";
 
 const CreatorEventDetail = () => {
     const { state } = useLocation();
@@ -14,6 +15,7 @@ const CreatorEventDetail = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [editFormData, setEditFormData] = useState({});
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const expiry = localStorage.getItem("expiry");
@@ -42,6 +44,7 @@ const CreatorEventDetail = () => {
     }, [event, activeTab]);
 
     const fetchParticipants = async () => {
+        setLoading(true);
         try {
             const res = await fetch(`http://localhost:5251/api/event/participants/${event.eventID}/` + JSON.parse(localStorage.getItem("user")).userID);
             const data = await res.json();
@@ -49,10 +52,14 @@ const CreatorEventDetail = () => {
         } catch (err) {
             console.log(err);
         }
+        finally{
+            setLoading(false);
+        }
     };
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true)
         try {
             const response = await fetch(
                 `http://localhost:5251/api/event/${event.eventID}`,
@@ -95,6 +102,9 @@ const CreatorEventDetail = () => {
             });
             console.log(error);
         }
+        finally{
+            setLoading(false)
+        }
     };
 
 
@@ -130,7 +140,7 @@ const CreatorEventDetail = () => {
             Swal.fire({
                 toast: true,
                 position: "bottom-end",
-                icon: "success",
+                icon: "error",
                 title: "Event deletion failed.",
                 showConfirmButton: false,
                 timer: 3000,
@@ -164,7 +174,6 @@ const CreatorEventDetail = () => {
             p.userMobile || "-"
         ]);
 
-        // ✅ Use plugin function, passing doc
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
@@ -173,214 +182,346 @@ const CreatorEventDetail = () => {
             headStyles: { fillColor: [39, 84, 138] }
         });
 
-        // Save PDF
         doc.save(`${event.eventTitle || "event"}_participants.pdf`);
     };
 
+    const modalVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.3,
+        ease: "easeOut",
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.8,
+      transition: {
+        duration: 0.2,
+      },
+    },
+  }
 
+  if (!event) {
     return (
-        <>
-            <div className="min-h-screen bg-[#F9F9F9]">
-                <div className="sticky top-0 z-50">
-                    <CreatorHeader />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="ml-4 text-primary">Loading event details...</p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header Placeholder */}
+        <div className="sticky top-0 z-50 bg-secondary shadow-sm border-b border-gray-200">
+          <CreatorHeader />
+        </div>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Page Title */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8"
+          >
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary mb-2">{event?.eventTitle}</h2>
+            <div className="w-16 h-1 bg-primary rounded-full"></div>
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="flex flex-wrap gap-3 mb-6"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setEditFormData({
+                  ...event,
+                  eventDateTime: event.eventDateTime.slice(0, 16), // for datetime-local
+                })
+                setShowEditModal(true)
+              }}
+              className="px-4 py-2 bg-blue-600 text-secondary rounded-lg font-semibold shadow-md hover:bg-blue-700 transition-all duration-300"
+            >
+              Edit Event
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowDeleteModal(true)}
+              className="px-4 py-2 bg-red-600 text-secondary rounded-lg font-semibold shadow-md hover:bg-red-700 transition-all duration-300"
+            >
+              Delete Event
+            </motion.button>
+          </motion.div>
+
+          {/* Tabs */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-wrap gap-2 sm:gap-4 border-b border-gray-200 mb-6"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium transition-all duration-300 ${
+                activeTab === "details"
+                  ? "border-b-2 border-primary text-primary bg-secondary shadow-sm"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              onClick={() => setActiveTab("details")}
+            >
+              Event Details
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium transition-all duration-300 ${
+                activeTab === "participants"
+                  ? "border-b-2 border-primary text-primary bg-secondary shadow-sm"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              onClick={() => setActiveTab("participants")}
+            >
+              Participants
+            </motion.button>
+          </motion.div>
+
+          {/* Tab Content */}
+          {activeTab === "details" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-secondary p-6 sm:p-8 rounded-xl shadow-lg border border-gray-100 space-y-4"
+            >
+              <div>
+                <h3 className="font-semibold text-primary mb-1">Description</h3>
+                <p className="text-gray-700 text-base sm:text-lg">{event?.eventDescription}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-primary mb-1">Location</h3>
+                <p className="text-gray-700 text-base sm:text-lg">{event?.eventLocation}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-primary mb-1">Date & Time</h3>
+                <p className="text-gray-700 text-base sm:text-lg">{new Date(event?.eventDateTime).toLocaleString()}</p>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "participants" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={downloadParticipantsPDF}
+                className="mb-4 px-4 py-2 bg-green-600 text-secondary rounded-lg font-semibold shadow-md hover:bg-green-700 transition-all duration-300"
+              >
+                Download PDF
+              </motion.button>
+              <div className="bg-secondary p-6 sm:p-8 rounded-xl shadow-lg border border-gray-100">
+                {loading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                  </div>
+                ) : participants.length === 0 ? (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-gray-500 text-center py-4 text-lg"
+                  >
+                    No participants registered for this event.
+                  </motion.p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border border-gray-200 rounded-lg">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-3 border-b text-left text-primary text-sm sm:text-base">Sr. No.</th>
+                          <th className="px-4 py-3 border-b text-left text-primary text-sm sm:text-base">Full Name</th>
+                          <th className="px-4 py-3 border-b text-left text-primary text-sm sm:text-base">Email</th>
+                          <th className="px-4 py-3 border-b text-left text-primary text-sm sm:text-base">Mobile</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {participants.map((p, i) => (
+                          <motion.tr
+                            key={i}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: i * 0.05 }}
+                            className="hover:bg-gray-50"
+                          >
+                            <td className="px-4 py-3 border-b text-gray-800 text-sm sm:text-base">{i + 1}</td>
+                            <td className="px-4 py-3 border-b text-gray-800 text-sm sm:text-base">{p.userFullName}</td>
+                            <td className="px-4 py-3 border-b text-gray-800 text-sm sm:text-base">{p.userEmail}</td>
+                            <td className="px-4 py-3 border-b text-gray-800 text-sm sm:text-base">{p.userMobile}</td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </main>
+      </div>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {showEditModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
+          >
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="bg-secondary rounded-xl p-6 sm:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative"
+            >
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl z-10"
+              >
+                ×
+              </button>
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-4">✏️</div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Edit Event</h3>
+                <p className="text-gray-600">Update the details of your event</p>
+              </div>
+              <form onSubmit={handleEditSubmit} className="space-y-4 sm:space-y-6">
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">Event Title</label>
+                  <input
+                    type="text"
+                    value={editFormData.eventTitle || ""}
+                    onChange={(e) => setEditFormData({ ...editFormData, eventTitle: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg p-3 sm:p-4 text-base sm:text-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors bg-secondary"
+                    required
+                  />
                 </div>
-                <main className="p-6">
-                    <h2 className="text-3xl font-bold text-[#27548A] mb-4">{event?.eventTitle}</h2>
-
-                    <div className="flex gap-3 mb-6">
-                        <button
-                            onClick={() => {
-                                setEditFormData({
-                                    ...event,
-                                    eventDateTime: event.eventDateTime.slice(0, 16) // for datetime-local
-                                });
-                                setShowEditModal(true);
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                            Edit
-                        </button>
-
-                        <button
-                            onClick={() => { setShowDeleteModal(true) }}
-                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                        >
-                            Delete
-                        </button>
-                    </div>
-
-                    {/* Tabs */}
-                    <div className="flex border-b mb-4">
-                        <button
-                            className={`px-4 py-2 ${activeTab === "details" ? "border-b-2 border-blue-600" : ""}`}
-                            onClick={() => setActiveTab("details")}
-                        >
-                            Event Details
-                        </button>
-                        <button
-                            className={`px-4 py-2 ${activeTab === "participants" ? "border-b-2 border-blue-600" : ""}`}
-                            onClick={() => setActiveTab("participants")}
-                        >
-                            Participants
-                        </button>
-                    </div>
-
-                    {activeTab === "details" && (
-                        <div className="bg-white p-6 rounded-lg shadow space-y-3">
-                            <p>
-                                <b>Description:</b> {event?.eventDescription}
-                            </p>
-                            <p>
-                                <b>Location:</b> {event?.eventLocation}
-                            </p>
-                            <p>
-                                <b>Date & Time:</b> {new Date(event?.eventDateTime).toLocaleString()}
-                            </p>
-                        </div>
-                    )}
-
-
-                    {activeTab === "participants" && (
-                        <>
-                            <button
-                                onClick={downloadParticipantsPDF}
-                                className="mb-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                            >
-                                Download PDF
-                            </button>
-
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                {participants.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">No participants registered.</p>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full border border-gray-200 rounded-lg">
-                                            <thead className="bg-gray-100">
-                                                <tr>
-                                                    <th className="px-4 py-2 border-b text-left">Sr. No.</th>
-                                                    <th className="px-4 py-2 border-b text-left">Full Name</th>
-                                                    <th className="px-4 py-2 border-b text-left">Email</th>
-                                                    <th className="px-4 py-2 border-b text-left">Mobile</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {participants.map((p, i) => (
-                                                    <tr key={i} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-2 border-b">{i + 1}</td>
-                                                        <td className="px-4 py-2 border-b">{p.userFullName}</td>
-                                                        <td className="px-4 py-2 border-b">{p.userEmail}</td>
-                                                        <td className="px-4 py-2 border-b">{p.userMobile}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
-                        </>)}
-
-                </main>
-            </div>
-
-            {showEditModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-                    <div className="bg-white rounded-lg p-8 w-[800px] max-w-3xl">
-                        <h3 className="text-2xl font-bold mb-6">Edit Event</h3>
-                        <form onSubmit={handleEditSubmit} className="space-y-4">
-
-                            <div>
-                                <label className="block text-gray-700 font-semibold mb-1">Event Title</label>
-                                <input
-                                    type="text"
-                                    value={editFormData.eventTitle || ""}
-                                    onChange={(e) => setEditFormData({ ...editFormData, eventTitle: e.target.value })}
-                                    className="w-full border rounded p-4 text-lg"
-                                    required
-                                />
-
-                            </div>
-
-                            <div>
-                                <label className="block text-gray-700 font-semibold mb-1">Event Description</label>
-                                <textarea
-                                    value={editFormData.eventDescription || ""}
-                                    onChange={(e) => setEditFormData({ ...editFormData, eventDescription: e.target.value })}
-                                    className="w-full border rounded p-4 text-lg"
-                                    rows="6"
-                                    required
-                                />
-
-                            </div>
-
-                            <div>
-                                <label className="block text-lg font-semibold mb-2">Event Location</label>
-                                <input
-                                    type="text"
-                                    value={editFormData.eventLocation || ""}
-                                    onChange={(e) => setEditFormData({ ...editFormData, eventLocation: e.target.value })}
-                                    className="w-full border rounded p-4 text-lg"
-                                    required
-                                />
-
-                            </div>
-
-                            <div>
-                                <label className="block text-gray-700 font-semibold mb-1">Event Date & Time</label>
-                                <input
-                                    type="datetime-local"
-                                    min={getMinDateTime()}
-                                    value={event.eventDateTime.slice(0, 16)}
-                                    onChange={(e) => event.eventDateTime = e.target.value}
-                                    className="w-full border rounded p-4 text-lg"
-                                    required
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowEditModal(false)}
-                                    className="px-5 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                >
-                                    Save
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">Event Description</label>
+                  <textarea
+                    value={editFormData.eventDescription || ""}
+                    onChange={(e) => setEditFormData({ ...editFormData, eventDescription: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg p-3 sm:p-4 text-base sm:text-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors resize-none bg-secondary"
+                    rows="4"
+                    required
+                  />
                 </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-                    <div className="bg-white rounded-lg p-6 w-96">
-                        <h3 className="text-xl font-bold mb-4">Confirm Delete</h3>
-                        <p>Are you sure you want to delete the event <b>{event.eventTitle}</b>?</p>
-                        <div className="flex justify-end gap-2 mt-4">
-                            <button
-                                onClick={() => setShowDeleteModal(false)}
-                                className="px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </div>
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">Event Location</label>
+                  <input
+                    type="text"
+                    value={editFormData.eventLocation || ""}
+                    onChange={(e) => setEditFormData({ ...editFormData, eventLocation: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg p-3 sm:p-4 text-base sm:text-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors bg-secondary"
+                    required
+                  />
                 </div>
-            )}
-        </>
-    );
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">Event Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    min={getMinDateTime()}
+                    value={editFormData.eventDateTime || ""}
+                    onChange={(e) => setEditFormData({ ...editFormData, eventDateTime: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg p-3 sm:p-4 text-base sm:text-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors bg-secondary"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-6 py-3 bg-gray-400 hover:bg-gray-500 text-secondary rounded-lg font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-secondary rounded-lg font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
+          >
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="bg-secondary rounded-xl p-6 sm:p-8 w-full max-w-md relative"
+            >
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl z-10"
+              >
+                ×
+              </button>
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-4">⚠️</div>
+                <h3 className="text-xl sm:text-2xl font-bold text-primary mb-2">Confirm Delete</h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete the event{" "}
+                  <span className="font-semibold text-primary">"{event.eventTitle}"</span>? This action cannot be
+                  undone.
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center gap-3">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-6 py-3 bg-gray-400 hover:bg-gray-500 text-secondary rounded-lg font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    disabled={loading}
+                    className="px-6 py-3 bg-red-600 hover:bg-red-700 text-secondary rounded-lg font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
 };
 
 export default CreatorEventDetail;
