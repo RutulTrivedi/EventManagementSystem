@@ -14,7 +14,7 @@ const CreatorEvents = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [activeTab, setActiveTab] = useState("All");
-    const [registrationsCount, setRegistrationsCount] = useState([]);
+    // const [registrationsCount, setRegistrationsCount] = useState([]);
 
     const [formData, setFormData] = useState({
         eventID: 0,
@@ -255,7 +255,9 @@ const CreatorEvents = () => {
 
     return (
         <div className="min-h-screen bg-[#F9F9F9]">
-            <CreatorHeader />
+            <div className="sticky top-0 z-50">
+                <CreatorHeader />
+            </div>
             <main className="p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-3xl font-bold text-[#27548A]">My Events</h2>
@@ -316,11 +318,13 @@ const CreatorEvents = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="">
                                 <div className="px-4 py-2 flex items-center gap-1">
                                     <span className="bold text-2xl">Total Registerations : </span>
                                     <span className="font-extrabold text-3xl">10+</span>
                                 </div>
+                                <div className="flex gap-2">
+
                                 {/* Eye Button */}
                                 <button
                                     onClick={() => navigate("/creator/events/detail", { state: { event } })}
@@ -344,6 +348,8 @@ const CreatorEvents = () => {
                                 >
                                     Delete
                                 </button>
+                                
+                                </div>
                             </div>
                         </div>
                     ))) : <Placeholder message={`No ${activeTab.toLowerCase()} events found`} />}

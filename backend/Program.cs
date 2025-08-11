@@ -13,6 +13,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IRegistrationRepository, RegistrationRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+// builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+// builder.Services.AddTransient<EmailService>();
 
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");

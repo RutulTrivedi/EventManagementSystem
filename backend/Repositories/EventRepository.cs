@@ -41,4 +41,27 @@ public class EventRepository : IEventRepository
             .Where(r => eventIds.Contains(r.EventID))
             .CountAsync();
     }
+
+    public async Task DeleteEventWithRegistrationsAsync(int eventId)
+    {
+        // Delete all registrations for the event
+        var regs = await _context.Registrations
+                                 .Where(r => r.EventID == eventId)
+                                 .ToListAsync();
+
+        if (regs.Any())
+        {
+            _context.Registrations.RemoveRange(regs);
+            await _context.SaveChangesAsync();
+        }
+
+        // Delete the event
+        var evt = await _context.Events.FindAsync(eventId);
+        if (evt != null)
+        {
+            _context.Events.Remove(evt);
+            await _context.SaveChangesAsync();
+        }
+    }
+
 }

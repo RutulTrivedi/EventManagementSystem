@@ -8,4 +8,5 @@ public interface IEventRepository
     Task Delete(int id);
     Task<IEnumerable<Event>> GetEventsByUserIdAsync(int userId);
     Task<int> CountParticipantsForEventsAsync(List<int> eventIds);
+    Task DeleteEventWithRegistrationsAsync(int eventId);
 }

@@ -198,12 +198,13 @@ public class EventController : ControllerBase
                     message = "Event not found"
                 });
 
-            await _eventRepo.Delete(id);
+            await _eventRepo.DeleteEventWithRegistrationsAsync(id);
+
             return Ok(new
             {
                 status = 200,
                 success = true,
-                message = "Event deleted successfully"
+                message = "Event and its registrations deleted successfully"
             });
         }
         catch (Exception ex)

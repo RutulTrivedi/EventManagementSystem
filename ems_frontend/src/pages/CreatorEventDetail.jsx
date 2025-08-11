@@ -181,7 +181,9 @@ const CreatorEventDetail = () => {
     return (
         <>
             <div className="min-h-screen bg-[#F9F9F9]">
-                <CreatorHeader />
+                <div className="sticky top-0 z-50">
+                    <CreatorHeader />
+                </div>
                 <main className="p-6">
                     <h2 className="text-3xl font-bold text-[#27548A] mb-4">{event?.eventTitle}</h2>
 

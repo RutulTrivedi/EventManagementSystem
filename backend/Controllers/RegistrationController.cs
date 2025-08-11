@@ -4,23 +4,24 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/[controller]")]
 public class RegistrationController : ControllerBase
 {
-    private readonly IRegistrationRepository _repo;
+    private readonly IRegistrationRepository _registrationRepo;
     private readonly IEventRepository _eventRepo;
+    private readonly IUserRepository _userRepo;
 
-    public RegistrationController(IRegistrationRepository repo, IEventRepository eventRepo)
+    public RegistrationController(IRegistrationRepository repo, IEventRepository eventRepo, IUserRepository userRepo)
     {
-        _repo = repo;
+        _registrationRepo = repo;
         _eventRepo = eventRepo;
+        _userRepo = userRepo;
     }
 
     public async Task<IActionResult> GetAll()
     {
         try
         {
-            var registrations = await _repo.GetAll();
+            var registrations = await _registrationRepo.GetAll();
             var mergedRegs = new List<object>();
 
-            // Attach full event data
             foreach (var reg in registrations)
             {
                 mergedRegs.Add(new
@@ -60,9 +61,9 @@ public class RegistrationController : ControllerBase
         try
         {
             reg.CreatedAt = DateTime.UtcNow;
-            await _repo.Register(reg);
+            await _registrationRepo.Register(reg);
 
-            var ev = await _eventRepo.GetEventByIdAsync(reg.EventID);
+            var eventDetails = await _eventRepo.GetEventByIdAsync(reg.EventID);
 
             return Ok(new
             {
@@ -75,7 +76,7 @@ public class RegistrationController : ControllerBase
                     reg.EventID,
                     reg.UserID,
                     reg.CreatedAt,
-                    Event = ev
+                    Event = eventDetails
                 }
             });
         }
@@ -96,7 +97,7 @@ public class RegistrationController : ControllerBase
     {
         try
         {
-            var registrations = await _repo.GetByUserId(userId);
+            var registrations = await _registrationRepo.GetByUserId(userId);
             var mergedRegs = new List<object>();
 
             foreach (var reg in registrations)
@@ -136,7 +137,7 @@ public class RegistrationController : ControllerBase
     {
         try
         {
-            var participants = await _repo.GetByEventId(eventId);
+            var participants = await _registrationRepo.GetByEventId(eventId);
             var mergedRegs = new List<object>();
 
             foreach (var reg in participants)
@@ -169,5 +170,4 @@ public class RegistrationController : ControllerBase
             });
         }
     }
-
 }
